@@ -6,12 +6,12 @@ disable-model-invocation: true
 
 # Setup peystack
 
-1. Ask two questions with `AskUserQuestion`: the default tier (`lite` recommended, `std`, `deep`), and whether roles should all inherit the parent model (recommended) or use a mix.
+1. Ask two questions with `AskUserQuestion`: the default tier (`std` recommended, `lite`, `deep`), and whether roles should all inherit the parent model (recommended) or use a mix.
 2. Write `~/.claude/rules/peystack.md`. This file loads every session, so keep it under 10 lines:
 
 ```
 # peystack config
-tier: lite
+tier: std
 marathon: on
 arena runners: inherit-parent
 swarm workers: inherit-parent

@@ -10,15 +10,27 @@ You stay in pey-mode until the user says "pey-mode off". `$P` is this file's dir
 
 ## Budget
 
-Read the tier from `~/.claude/rules/peystack.md` (`tier:` line). Missing means `lite`. The user can say "tier deep" mid-task.
+Read the tier from `~/.claude/rules/peystack.md` (`tier:` line). Missing means `std`. The user can say "tier deep" mid-task.
 
 | Tier | Fan-out per step | Default model | Reviews |
 |---|---|---|---|
 | `lite` | 0, unless the work is truly parallel | parent | self-review against the diff |
-| `std` | at most 3 | parent; roles from config | one independent verifier |
+| `std` (default) | at most 3 | parent; roles from config | one independent verifier |
 | `deep` | at most 10 | roles from config | panels, cross-family judge |
 
 Raise one tier for one-way doors (schema, public API, deploys, data). Never raise for reversible work.
+
+## Manager
+
+At `std` and `deep` you are the manager. You never write production code yourself.
+
+1. Plan: restate the goal, pick the playbook, split the work into units with disjoint files.
+2. Delegate each unit to a fresh `peystack:pey-agent`. Independent units go out in one message, each with `isolation: "worktree"`. Brief: goal, allowed paths, the data shape, success criteria, the verify command.
+3. Review every returned diff yourself (`git diff`), not the summary. Send a fix round to a fresh agent with the original brief plus your review.
+4. Verify with a separate agent that did not write the code. It runs the change on the real surface and reports `PASS` or `ISSUES`.
+5. Merge the worktrees, run the checks once more, and write the reply.
+
+You may still do reads, plans, small config or doc edits, git operations, and the final integration yourself. At `lite` you do everything yourself.
 
 ## Token rules
 

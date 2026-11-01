@@ -23,7 +23,7 @@ Then, once:
 /peystack:pey-mode
 ```
 
-Leave it with "pey-mode off". Change depth mid-task with "tier lite", "tier std", or "tier deep".
+Leave it with "pey-mode off". Change depth mid-task with "tier lite", "tier std", or "tier deep". At `std` (default) and `deep`, the main chat acts as a manager: it plans, hands code to `pey-agent` subagents, reviews each diff, and has a separate agent verify.
 
 ## Marathon: always on
 
@@ -60,7 +60,7 @@ Measured with `scripts/measure.sh` (bytes / 4, approximate) against pstack 0.15.
 
 The bigger savings are at runtime, not in file size:
 
-- **Budget tiers.** `lite` (default) runs inline and fans out only for truly parallel work. `std` caps fan-out at 3 with one independent verifier. `deep` restores pstack-scale panels (up to 10 lanes, cross-family judges). pstack runs panels by default.
+- **Budget tiers.** `lite` runs inline and fans out only for truly parallel work. `std` (default) delegates code to subagents, caps fan-out at 3, and adds one independent verifier. `deep` restores pstack-scale panels (up to 10 lanes, cross-family judges). pstack runs panels by default.
 - **Principles inline.** One line each in the core file. pstack requires reading each principle's leaf file before citing it.
 - **No adapter.** peystack uses Claude Code names directly. pstack loads a Cursor-to-Claude mapping file each session.
 - **Lean delegates.** `pey-agent` carries its rules in a 200-token prompt. pstack's delegate rereads the full 22 KB mode file on every spawn.

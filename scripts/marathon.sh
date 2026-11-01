@@ -31,7 +31,9 @@ PY
 
 run() {
   mkdir -p "$dir"
-  local first="Run /peystack:pey-mode, then /peystack:marathon. Work the queue in .peystack/marathon.md until it holds DONE or BLOCKED."
+  # Both skills are user-only (disable-model-invocation), so a headless session reads them instead of invoking them.
+  local skills; skills=$(cd "$(dirname "$self")/../skills" && pwd)
+  local first="Read $skills/pey-mode/SKILL.md and $skills/marathon/SKILL.md and follow them; you are already inside the run. Work the queue in .peystack/marathon.md until it holds DONE or BLOCKED."
   local again="Continue the marathon in .peystack/marathon.md from the first unchecked box. Read .peystack/resume.md if it exists."
   while open_work; do
     say "working"
