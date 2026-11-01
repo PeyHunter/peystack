@@ -12,11 +12,12 @@ disable-model-invocation: true
 ```
 # peystack config
 tier: lite
+marathon: on
 arena runners: inherit-parent
 swarm workers: inherit-parent
 interrogate reviewers: inherit-parent
 judgment: opus
 ```
 
-Model values are `inherit-parent`, `opus`, `sonnet`, `haiku`, or `fable`. Fewer lines are fine; a missing role uses the parent model.
+`marathon: off` disables the always-on marathon. Model values are `inherit-parent`, `opus`, `sonnet`, `haiku`, or `fable`. Fewer lines are fine; a missing role uses the parent model.
 3. Show the file and say how to change the tier mid-session ("tier deep").

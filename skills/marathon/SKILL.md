@@ -1,16 +1,21 @@
 ---
 name: marathon
-description: Use all the time the plan allows. Keep working through a queue, and resume by itself after usage limits reset. Use for /marathon.
+description: Use all the time the plan allows. Keep working through a queue, and resume by itself after usage limits or a closed terminal. On by default. Use for /marathon.
 disable-model-invocation: true
 ---
 
 # Marathon
 
-The work queue is `.peystack/marathon.md` in the project. While it has an unchecked box, the peystack Stop hook refuses to let a session end. `scripts/marathon.sh` runs the queue headless and, when a usage limit hits, sleeps until the reset time and resumes the same session.
+On by default for every session (SessionStart hook). Turn off with `marathon: off` in `~/.claude/rules/peystack.md`.
 
-## Start
+Three layers keep work going:
+1. **Stop hook.** While `.peystack/marathon.md` has an unchecked box, a session cannot end.
+2. **Claude Code itself.** An open terminal already waits out a usage limit and continues at the reset time.
+3. **Watcher** (`scripts/marathon.sh watch`). It checks every 5 minutes. If the terminal closed, or it stayed stuck 15 minutes past a reset, it resumes the same session headless and keeps going until the queue is done, waiting out further limits.
 
-1. Write `.peystack/marathon.md`:
+## Any task over three steps
+
+1. Write `.peystack/marathon.md` and add `.peystack/` to `.gitignore`:
 
 ```markdown
 # Marathon: <goal in one line>
@@ -21,19 +26,16 @@ Done when: <checkable predicate>
 - [ ] <unit 2> . evidence: <command or file>
 ```
 
-Order units smallest-verifiable first. Add `.peystack/` to `.gitignore`.
+2. Run `bash <peystack>/scripts/marathon.sh watch` once. It returns at once and runs in the background.
+3. Do the work in this session with the matching pey-mode playbook. Check a box only when its evidence exists. Commit after each box.
+4. When the boxes run out but the goal has more value to give (tests, parked follow-ups, cleanup), add boxes and keep going.
+5. Write `DONE` on its own line when the predicate holds, or `BLOCKED: <reason>` when only the user can unblock it. Irreversible actions still pause per pey-mode Autonomy.
 
-2. Hand off to the runner so limits cannot end the run. Run `bash <peystack>/scripts/marathon.sh start` from the project root, then tell the user the three commands below and stop your own turn. Do not work the queue in this session too, because two writers would collide.
+## Fully unattended
 
-Commands for the user, each one short:
-- `bash ~/peystack/scripts/marathon.sh status` shows progress and whether it is waiting on a limit.
-- `bash ~/peystack/scripts/marathon.sh log` shows the last lines of output.
-- `bash ~/peystack/scripts/marathon.sh stop` ends the run.
+When the user is leaving, run `bash <peystack>/scripts/marathon.sh start` instead and end your turn, so only the headless runner writes.
 
-## Inside the run
-
-- Work the first unchecked box with the matching pey-mode playbook. Check it only when its evidence exists.
-- Commit after each box. Append a `/log` row.
-- When the queue empties but time remains, add the next most valuable units toward the goal (tests, cleanup, follow-ups you parked). Stop adding only when the predicate holds and nothing worth doing remains, then write `DONE` on its own line.
-- A real blocker that needs the human: write `BLOCKED: <reason>` on its own line. The hook then lets the session end, and the runner exits.
-- Irreversible actions (deploys, force-push to shared branches, data deletion) still pause per pey-mode Autonomy.
+Commands for the user, from the project folder:
+- `bash ~/peystack/scripts/marathon.sh status`
+- `bash ~/peystack/scripts/marathon.sh log`
+- `bash ~/peystack/scripts/marathon.sh stop`

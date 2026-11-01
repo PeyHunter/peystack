@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Runs .peystack/marathon.md headless and resumes after usage limits reset.
-# Usage (from the project root): marathon.sh start | status | log | stop | run
+# Usage (from the project root): marathon.sh start | watch | status | log | stop
+#   start  run the queue headless now
+#   watch  guard an interactive session; take over only if it closes or stays stuck after a usage limit
 set -uo pipefail
 dir=.peystack; q=$dir/marathon.md; log=$dir/marathon.log; pidf=$dir/marathon.pid; sidf=$dir/marathon.session; statef=$dir/marathon.state
 mode=${PEY_PERMISSION_MODE:-auto}
@@ -51,12 +53,64 @@ except Exception: pass' 2>/dev/null)
   say "finished: $(grep -m1 -E '^(DONE|BLOCKED:)' "$q" 2>/dev/null || echo 'no open boxes')"
 }
 
+transcript() { # newest transcript for this project
+  local slug; slug=$(pwd | sed 's#[/.]#-#g')
+  ls -t "$HOME/.claude/projects/$slug"/*.jsonl 2>/dev/null | head -1
+}
+interactive_alive() { # a claude process (not ours) with this cwd
+  local p me; me=$(pwd -P)
+  for p in $(pgrep -x claude 2>/dev/null); do
+    [ "$(readlink /proc/$p/cwd 2>/dev/null)" = "$me" ] || continue
+    tr '\0' ' ' < /proc/$p/cmdline | grep -q -- ' -p ' && continue
+    return 0
+  done; return 1
+}
+stuck_after_limit() { # last note is a usage limit, and its reset passed 15+ min ago with no activity
+  python3 - "$1" <<'PY'
+import json,re,sys,time,datetime,subprocess
+lines=open(sys.argv[1],errors='ignore').read().splitlines()[-60:]
+note=None
+for l in lines:
+    if re.search(r'usage limit has reset',l,re.I): note=None
+    elif re.search(r'limit reached',l,re.I) and '"subtype"' in l: note=l
+if not note: sys.exit(1)
+try: d=json.loads(note); t0=datetime.datetime.fromisoformat(d["timestamp"].replace("Z","+00:00")).timestamp(); txt=d.get("content","")
+except Exception: sys.exit(1)
+m=re.search(r'\|(\d{10})',txt)
+if m: reset=int(m.group(1))
+else:
+    m=re.search(r'at\s+([0-9]{1,2}(?::[0-9]{2})?\s*[ap]m)',txt,re.I)
+    if not m: sys.exit(1)
+    day=time.strftime('%Y-%m-%d',time.localtime(t0))
+    r=subprocess.run(['date','-d',f'{day} {m.group(1)}','+%s'],capture_output=True,text=True)
+    if r.returncode: sys.exit(1)
+    reset=int(r.stdout)
+    if reset<=t0: reset+=86400
+sys.exit(0 if time.time()>reset+900 else 1)
+PY
+}
+
+watch() {
+  mkdir -p "$dir"
+  while open_work; do
+    tf=$(transcript)
+    if [ -n "$tf" ] && { ! interactive_alive || stuck_after_limit "$tf"; }; then
+      basename "$tf" .jsonl > "$sidf"
+      say "interactive session gone or stuck; taking over $(cat "$sidf")"
+      run; return
+    fi
+    say "watching"
+    sleep 300
+  done
+  say "finished: $(grep -m1 -E '^(DONE|BLOCKED:)' "$q" 2>/dev/null || echo 'no open boxes')"
+}
+
 case "${1:-}" in
-  start)
+  start|watch)
     [ -f "$q" ] || { echo "No $q here. Run /peystack:marathon first, from the project root."; exit 1; }
     running && { echo "Already running (pid $(cat "$pidf"))."; exit 0; }
-    mkdir -p "$dir"; nohup bash "$self" run >/dev/null 2>&1 & echo $! > "$pidf"
-    echo "Marathon started. Check it with: bash $self status" ;;
+    mkdir -p "$dir"; nohup bash "$self" "$([ "$1" = start ] && echo run || echo _watch)" >/dev/null 2>&1 & echo $! > "$pidf"
+    echo "Marathon $1 started. Check it with: bash $self status" ;;
   status)
     running && echo "Running (pid $(cat "$pidf"))." || echo "Not running."
     [ -f "$statef" ] && echo "State: $(cat "$statef")"
@@ -66,5 +120,6 @@ case "${1:-}" in
     if running; then pkill -P "$(cat "$pidf")" 2>/dev/null; kill "$(cat "$pidf")"; echo "Stopped."; else echo "Not running."; fi
     rm -f "$pidf" ;;
   run) run ;;
-  *) echo "Usage: marathon.sh start | status | log | stop" ;;
+  _watch) watch ;;
+  *) echo "Usage: marathon.sh start | watch | status | log | stop" ;;
 esac

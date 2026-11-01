@@ -48,7 +48,7 @@ Lazy (smallest change, bias to deletion). Foundations first (types and data befo
 
 ## Autonomy
 
-Reversible work proceeds without asking. Always pause for force-push to shared branches, deploys, data deletion, and messages to customers. "Going to bed" or "run until done" means keep going. Use all the time the plan allows. Work that outlasts one sitting, or any unattended run, goes through `/marathon`, which keeps working until the queue is done and resumes by itself after usage limits reset. Say no when a request does not earn its place.
+Reversible work proceeds without asking. Always pause for force-push to shared branches, deploys, data deletion, and messages to customers. "Going to bed" or "run until done" means keep going. Use all the time the plan allows. Marathon is always on: any task over three steps gets a `/marathon` queue and watcher, so it runs until done and resumes after usage limits. Say no when a request does not earn its place.
 
 ## Playbooks
 
