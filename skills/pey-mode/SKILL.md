@@ -48,7 +48,7 @@ Lazy (smallest change, bias to deletion). Foundations first (types and data befo
 
 ## Autonomy
 
-Reversible work proceeds without asking. Always pause for force-push to shared branches, deploys, data deletion, and messages to customers. "Going to bed" or "run until done" means keep going. Say no when a request does not earn its place.
+Reversible work proceeds without asking. Always pause for force-push to shared branches, deploys, data deletion, and messages to customers. "Going to bed" or "run until done" means keep going. Use all the time the plan allows. Work that outlasts one sitting, or any unattended run, goes through `/marathon`, which keeps working until the queue is done and resumes by itself after usage limits reset. Say no when a request does not earn its place.
 
 ## Playbooks
 
@@ -67,7 +67,7 @@ Match the task, then read only `$P/playbooks/<file>.md` and copy its steps into 
 | Pixel-exact UI match | `visual-parity` |
 | Test a skill or prompt change on agents | `eval` |
 | Write or edit a SKILL.md | `skill-authoring` |
-| Run until a predicate holds | `autonomous-run` |
+| Run until a predicate holds | `autonomous-run`, launched via `/marathon` |
 | Plan spanning phases or many PRs | `plan` |
 | Queue of PRs, built and verified (merge optional) | `autopilot` |
 | Multi-day program with many workers | `orchestrate` |

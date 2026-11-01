@@ -25,6 +25,20 @@ Then, once:
 
 Leave it with "pey-mode off". Change depth mid-task with "tier lite", "tier std", or "tier deep".
 
+## Marathon: use all your plan's time
+
+`/peystack:marathon` writes a work queue to `.peystack/marathon.md` and starts a runner in the background. A Stop hook keeps Claude working while the queue has unchecked boxes. When a usage limit hits, the runner reads the reset time, sleeps until then, and resumes the same session. pey-mode sends every long or unattended task through it.
+
+Three short commands, run from the project folder:
+
+```
+bash ~/peystack/scripts/marathon.sh status
+bash ~/peystack/scripts/marathon.sh log
+bash ~/peystack/scripts/marathon.sh stop
+```
+
+The run ends when Claude writes `DONE` (goal met) or `BLOCKED: <reason>` (needs you) in the queue file. The runner uses `--permission-mode auto`. Set `PEY_PERMISSION_MODE` to change it.
+
 ## Where the tokens went
 
 Measured with `scripts/measure.sh` (bytes / 4, approximate) against pstack 0.15.36.
@@ -89,6 +103,7 @@ Type each as `/peystack:<name>`.
 | `write`, `decomment` | Prose rules, comment stripping |
 | `bench`, `tdd`, `ts` | Perf vetting, red-green, TypeScript rules |
 | `log` | Decision trail TSV |
+| `marathon` | Use all available time, resume after limits |
 | `ketchup`, `recall`, `plain`, `sharpen` | Catch up, rebuild context, plain restate, deepen a prompt |
 | `reflect`, `correct`, `automate-me` | Learn from sessions, make mistakes impossible, capture your style |
 | `verify-kit` | Create or maintain verification and formal-verification skills |
@@ -120,6 +135,8 @@ Left out on purpose. `make-bot-ui` (tied to Grok bots). `ketchup-video` (`ketchu
 - `scripts/measure.sh` prints the token table above.
 - `scripts/log.sh` appends a row to a decision log.
 - `scripts/check-plan.sh` lints a plan from the `plan` playbook.
+- `scripts/marathon.sh` runs a marathon queue and waits out usage limits.
+- `scripts/marathon-stop-hook.sh` is the Stop hook that keeps a marathon going.
 
 ## Credit
 
