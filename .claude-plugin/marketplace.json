@@ -1,0 +1,14 @@
+{
+  "name": "peystack",
+  "description": "peystack: token-light Claude Code workflows.",
+  "owner": {
+    "name": "PeyHunter"
+  },
+  "plugins": [
+    {
+      "name": "peystack",
+      "source": "./",
+      "description": "Token-light agent workflows: pey-mode, playbooks, and verified multi-agent skills."
+    }
+  ]
+}

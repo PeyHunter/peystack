@@ -1,0 +1,10 @@
+{
+  "name": "peystack",
+  "version": "0.1.0",
+  "description": "Token-light agent workflows: pey-mode, playbooks, and verified multi-agent skills, with a budget tier that scales fan-out.",
+  "author": { "name": "PeyHunter" },
+  "homepage": "https://github.com/PeyHunter/peystack",
+  "repository": "https://github.com/PeyHunter/peystack",
+  "license": "MIT",
+  "keywords": ["pey-mode", "workflow", "playbooks", "subagents", "token-light"]
+}
