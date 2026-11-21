@@ -75,8 +75,9 @@ interactive_alive() { # a claude process (not ours) whose cwd is here or a paren
     return 0
   done; return 1
 }
-idle_too_long() { # open boxes but the session wrote nothing for 30 min: stuck, whatever the reason
-  [ $(( $(date +%s) - $(stat -c %Y "$1") )) -gt 1800 ]
+idle_too_long() { # open boxes, and neither the session nor its subagents wrote anything for 30 min
+  local newest; newest=$(find "$1" "${1%.jsonl}" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+  [ $(( $(date +%s) - ${newest%.*} )) -gt 1800 ]
 }
 stuck_after_limit() { # last note is a usage limit, and its reset passed 15+ min ago with no activity
   python3 - "$1" <<'PY'
