@@ -55,17 +55,28 @@ except Exception: pass' 2>/dev/null)
   say "finished: $(grep -m1 -E '^(DONE|BLOCKED:)' "$q" 2>/dev/null || echo 'no open boxes')"
 }
 
-transcript() { # newest transcript for this project
-  local slug; slug=$(pwd | sed 's#[/.]#-#g')
-  ls -t "$HOME/.claude/projects/$slug"/*.jsonl 2>/dev/null | head -1
+transcript() { # newest transcript of a session that works here; it may have started in a parent folder
+  local d here slug f; here=$(pwd)
+  d=$here
+  while [ -n "$d" ]; do
+    slug=$(printf '%s' "$d" | sed 's#[/.]#-#g')
+    for f in $(ls -t "$HOME/.claude/projects/$slug"/*.jsonl 2>/dev/null | head -20); do
+      if [ "$d" = "$here" ] || grep -qF "$here" "$f"; then echo "$f"; return; fi
+    done
+    [ "$d" = "/" ] && break; d=$(dirname "$d")
+  done
 }
-interactive_alive() { # a claude process (not ours) with this cwd
-  local p me; me=$(pwd -P)
+interactive_alive() { # a claude process (not ours) whose cwd is here or a parent folder
+  local p me cwd; me=$(pwd -P)
   for p in $(pgrep -x claude 2>/dev/null); do
-    [ "$(readlink /proc/$p/cwd 2>/dev/null)" = "$me" ] || continue
+    cwd=$(readlink /proc/$p/cwd 2>/dev/null) || continue
+    case "$me/" in "$cwd"/*) ;; *) continue ;; esac
     tr '\0' ' ' < /proc/$p/cmdline | grep -q -- ' -p ' && continue
     return 0
   done; return 1
+}
+idle_too_long() { # open boxes but the session wrote nothing for 30 min: stuck, whatever the reason
+  [ $(( $(date +%s) - $(stat -c %Y "$1") )) -gt 1800 ]
 }
 stuck_after_limit() { # last note is a usage limit, and its reset passed 15+ min ago with no activity
   python3 - "$1" <<'PY'
@@ -74,7 +85,7 @@ lines=open(sys.argv[1],errors='ignore').read().splitlines()[-60:]
 note=None
 for l in lines:
     if re.search(r'usage limit has reset',l,re.I): note=None
-    elif re.search(r'limit reached',l,re.I) and '"subtype"' in l: note=l
+    elif re.search(r'limit reached|hit your .{0,20}limit',l,re.I) and '"subtype"' in l: note=l
 if not note: sys.exit(1)
 try: d=json.loads(note); t0=datetime.datetime.fromisoformat(d["timestamp"].replace("Z","+00:00")).timestamp(); txt=d.get("content","")
 except Exception: sys.exit(1)
@@ -96,7 +107,7 @@ watch() {
   mkdir -p "$dir"
   while open_work; do
     tf=$(transcript)
-    if [ -n "$tf" ] && { ! interactive_alive || stuck_after_limit "$tf"; }; then
+    if [ -n "$tf" ] && { ! interactive_alive || stuck_after_limit "$tf" || idle_too_long "$tf"; }; then
       basename "$tf" .jsonl > "$sidf"
       say "interactive session gone or stuck; taking over $(cat "$sidf")"
       run; return
